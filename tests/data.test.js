@@ -1,0 +1,6 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {calculate,products,sales} from '../src/data.js';
+test('выручка и заказы согласованы с данными по дням',()=>{const {total:t}=calculate();assert.equal(t.units,sales.flat().reduce((a,b)=>a+b,0));assert.equal(t.revenue,sales.reduce((n,day)=>n+day.reduce((s,u,i)=>s+u*products[i].price,0),0));assert.equal(t.margin,t.revenue-t.cogs-t.commission-t.logistics-t.other-t.spend);assert.equal(t.revenue,562400);assert.equal(t.margin,194560);});
+test('план-факт содержит успешные и проблемные позиции, остаток на три дня',()=>{const {rows}=calculate();assert.ok(rows.some(p=>p.units>=p.plan));assert.ok(rows.some(p=>p.units<p.plan));assert.equal(rows[0].stock,50);assert.equal(Math.round(rows[0].days),3);assert.equal(rows[0].warehouse,'Коледино');assert.equal(rows[0].spend/rows[0].adRevenue*100,15);assert.equal(rows[0].clicks/rows[0].impressions*100,2);});
+test('фильтры: каждый артикул и диапазон сохраняют финансовые инварианты',()=>{for(const p of products)for(const days of [[0],[4,5,6],[0,1,2,3,4,5,6]]){const {total:t}=calculate([p],days);assert.ok(Number.isInteger(t.adOrders));assert.ok(t.adOrders<=t.units);assert.ok(Math.abs(t.margin-(t.revenue-t.cogs-t.commission-t.logistics-t.other-t.spend))<.001);}});
